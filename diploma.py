@@ -1,5 +1,6 @@
 import requests
 from pprint import pprint
+import time
 
 user_name = 'eshmargunov'
 id = 171691064
@@ -11,26 +12,58 @@ params = {
     'user_id': id
 }
 def get_groups():
+    #groupslist = []
     params['extended'] = 1
-    params['user_id'] = id
-    response = requests.get('https://api.vk.com/method/groups.get', params)
-    resp_js = response.json()['response']['items']
-    pprint(resp_js)
-    return resp_js
+    resp_js_gr = requests.get('https://api.vk.com/method/groups.get', params).json()['response']['items']
+    #pprint(resp_js)
+    #groupslist.append(resp_js)
+    #pprint(groupslist)
+    #return groupslist
+    return resp_js_gr
 
 def get_friends():
-    response = requests.get('https://api.vk.com/method/friends.get', params)
-    resp_js = response.json()['response']['items']
-    pprint(resp_js)
+    resp_js = requests.get('https://api.vk.com/method/friends.get', params).json()['response']['items']
+    #pprint(resp_js)
     return resp_js
 
 def friends_groups():
+    c = 0
+    friends_grouplist = []
     for friends in get_friends():
-        id = friends
-        get_groups()
-        pprint(friends)
-    #return resp_js
+        c += 1
+        print('-', c)
+        params['user_id'] = friends
+        response = requests.get('https://api.vk.com/method/groups.get', params)
+        time.sleep(0.6)
+        try:
+            resp_js = response.json()['response']['items']
+            friends_grouplist.append(resp_js)
+            #print(resp_js)
+        except KeyError:
+            print('Ошибка 7. Нет прав для выполнения этого действия.')
+    #pprint(friends_grouplist)
+    return friends_grouplist
 
-get_groups()
+def answer_for_d():
+    answer_list = []
+    user_groups = get_groups()
+    user_friends_groups = friends_groups()
+    i = 0
+    while i < len(user_groups):
+        for group in user_friends_groups:
+            if user_groups[i] in group:
+                    break
+        else:
+            answer_list.append(user_groups[i])
+            #pprint(user_groups[i])
+        i += 1
+    pprint(answer_list)
+
+
+
+
+#pprint(get_groups())
+#print(get_groups())
 #get_friends()
 #friends_groups()
+answer_for_d()
