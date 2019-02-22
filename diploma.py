@@ -3,67 +3,72 @@ from pprint import pprint
 import time
 
 user_name = 'eshmargunov'
-id = 171691064
-TOKEN = 'ed1271af9e8883f7a7c2cefbfddfcbc61563029666c487b2f71a5227cce0d1b533c4af4c5b888633c06ae'
+ID = 171691064
+
+with open('take_token.txt', encoding='utf-8') as f:
+    TOKEN = f.read()
+
+# TOKEN = input('Введите TOKEN')
 
 params = {
     'v': '5.92',
     'access_token': TOKEN,
-    'user_id': id
+    'user_id': ID,
+    # 'screen_name': user_name
 }
-def get_groups():
-    #groupslist = []
+
+
+def get_groups():  # группы пользователя
     params['extended'] = 1
-    resp_js_gr = requests.get('https://api.vk.com/method/groups.get', params).json()['response']['items']
-    #pprint(resp_js)
-    #groupslist.append(resp_js)
-    #pprint(groupslist)
-    #return groupslist
-    return resp_js_gr
+    params['fields'] = 'members_count'
+    resp_js_gr = requests.get('https://api.vk.com/method/groups.get', params).json()
+    # for group in resp_js_gr:
+    #     print(group["name"])
+    return resp_js_gr['response']['items']
 
-def get_friends():
-    resp_js = requests.get('https://api.vk.com/method/friends.get', params).json()['response']['items']
-    #pprint(resp_js)
-    return resp_js
 
-def friends_groups():
+def get_friends():  # друзья пользователя
+    resp_js = requests.get('https://api.vk.com/method/friends.get', params).json()
+    return resp_js['response']['items']
+
+
+def friends_groups():  # группы друзей
     c = 0
     friends_grouplist = []
     for friends in get_friends():
         c += 1
         print('-', c)
-        params['user_id'] = friends
+        params['user_id'] = friends['id']
         response = requests.get('https://api.vk.com/method/groups.get', params)
-        time.sleep(0.6)
+        print(response.json())
         try:
             resp_js = response.json()['response']['items']
+            print(resp_js)
             friends_grouplist.append(resp_js)
-            #print(resp_js)
         except KeyError:
+            if response.json()['error']['error_code'] == 6:
+                time.sleep(0.6)
             print('Ошибка 7. Нет прав для выполнения этого действия.')
-    #pprint(friends_grouplist)
     return friends_grouplist
 
+
 def answer_for_d():
-    answer_list = []
     user_groups = get_groups()
+    # pprint(user_groups)
     user_friends_groups = friends_groups()
+    # pprint(user_friends_groups)
     i = 0
     while i < len(user_groups):
         for group in user_friends_groups:
             if user_groups[i] in group:
-                    break
+                break
         else:
-            answer_list.append(user_groups[i])
-            #pprint(user_groups[i])
+            with open('groups.json', 'a', encoding='utf-8') as fa:
+                fa.write(str(user_groups[i]) + '\n')
         i += 1
-    pprint(answer_list)
 
 
-
-
-#pprint(get_groups())
-#print(get_groups())
-#get_friends()
-#friends_groups()
+# pprint(get_groups())
+# pprint(get_friends())
+# pprint(friends_groups())
 answer_for_d()
