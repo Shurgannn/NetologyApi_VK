@@ -4,6 +4,7 @@ import time
 import json
 
 # user_name = input('Введите имя пользователя')# 'eshmargunov'
+# ID = 171691064
 # ID = input('Введите id пользователя')# 171691064
 users = input('Введите id или имя пользователя')
 
@@ -29,43 +30,44 @@ def get_groups():  # группы пользователя
 
 def get_friends():  # друзья пользователя
     resp_js = requests.get('https://api.vk.com/method/friends.get', params).json()
-    return resp_js['response']['items']
+    resp_j = resp_js['response']['items']
+    # print(resp_j)
+    return resp_j
 
 
 def friends_groups():  # группы друзей
-    c = 0
-    c2 = 0
+    i = 0
     friends_grouplist = []
-    for friends in get_friends():
-        c += 1
-        print('-', c)
-        while c2 < c:
-            params['user_id'] = friends['id']
-            response = requests.get('https://api.vk.com/method/groups.get', params)
-            try:
-                resp_js = response.json()['response']['items']
-                print(resp_js)
-                friends_grouplist.append(resp_js)
-                c2 += 1
-            except KeyError:
-                if response.json()['error']['error_code'] == 6:
-                    print('Ошибка 6.')
-                    time.sleep(0.8)
-                elif response.json()['error']['error_code'] == 7:
-                    print('Ошибка 7. Нет прав для выполнения этого действия.')
-                    c2 += 1
-                elif response.json()['error']['error_code'] == 18:
-                    print('Ошибка 18. Страница удалена или заблокирована.')
-                    c2 += 1
-        print(c2)
+    friends = get_friends()
+    while i < len(friends):
+        print('-')
+        params['user_id'] = friends[i]['id']
+        response = requests.get('https://api.vk.com/method/groups.get', params)
+        try:
+            resp_js = response.json()['response']['items']
+            print(resp_js)
+            friends_grouplist.append(resp_js)
+            i += 1
+        except KeyError:
+            if response.json()['error']['error_code'] == 6:
+                print('Ошибка 6.')
+                print(response.json())
+                time.sleep(2)
+            elif response.json()['error']['error_code'] == 7:
+                print('Ошибка 7. Нет прав для выполнения этого действия.')
+                i += 1
+                print(response.json())
+            elif response.json()['error']['error_code'] == 18:
+                print('Ошибка 18. Страница удалена или заблокирована.')
+                print(response.json())
+                i += 1
+        print(i)
     return friends_grouplist
 
 
 def answer_for_d():
     user_groups = get_groups()
-    # pprint(user_groups)
     user_friends_groups = friends_groups()
-    # pprint(user_friends_groups)
     i = 0
     list_answers_for_d = []
     while i < len(user_groups):
@@ -74,15 +76,13 @@ def answer_for_d():
                 break
         else:
             pprint(user_groups[i])
-            list_answers_for_d.append((user_groups[i])['name'])
+            d = {
+                'name': user_groups[i]['name'],
+                'id': user_groups[i]['id'],
+                'members_count': user_groups[i]['members_count']
+            }
+            list_answers_for_d.append(d)
         i += 1
-    #for group in list_answers_for_d:
-    #    del group['screen_name']
-     #   del group['is_closed']
-     #   del group['photo_100']
-     #   del group['photo_200']
-     #   del group['photo_50']
-     #   del group['type']
     return list_answers_for_d
 
 
