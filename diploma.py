@@ -22,8 +22,6 @@ params = {
 
 
 def get_groups():  # группы пользователя
-    params['extended'] = 1
-    params['fields'] = 'members_count'
     resp_js_gr = requests.get('https://api.vk.com/method/groups.get', params).json()['response']['items']
     return resp_js_gr
 
@@ -31,26 +29,25 @@ def get_groups():  # группы пользователя
 def get_friends():  # друзья пользователя
     resp_js = requests.get('https://api.vk.com/method/friends.get', params).json()
     resp_j = resp_js['response']['items']
-    # print(resp_j)
     return resp_j
 
 
 def friends_groups():  # группы друзей
     i = 0
-    friends_grouplist = []
+    set_user_groups = set(get_groups())
     friends = get_friends()
     while i < len(friends):
         print('-')
-        params['user_id'] = friends[i]['id']
+        params['user_id'] = friends[i]
         response = requests.get('https://api.vk.com/method/groups.get', params)
         try:
-            resp_js = response.json()['response']['items']
-            print(resp_js)
-            friends_grouplist.append(resp_js)
+            set_friends_groups = set(response.json()['response']['items'])
+            common_groups = (set_user_groups & set_friends_groups)
+            set_user_groups = set_user_groups - common_groups
             i += 1
         except KeyError:
             if response.json()['error']['error_code'] == 6:
-                print('Ошибка 6.')
+                print('Ошибка 6. Слишком много запросов в секунду.')
                 print(response.json())
                 time.sleep(2)
             elif response.json()['error']['error_code'] == 7:
@@ -62,27 +59,31 @@ def friends_groups():  # группы друзей
                 print(response.json())
                 i += 1
         print(i)
-    return friends_grouplist
+    return set_user_groups
 
 
 def answer_for_d():
-    user_groups = get_groups()
-    user_friends_groups = friends_groups()
     i = 0
+    unique_groups = list(friends_groups())
     list_answers_for_d = []
-    while i < len(user_groups):
-        for group in user_friends_groups:
-            if user_groups[i] in group:
-                break
-        else:
-            pprint(user_groups[i])
-            d = {
-                'name': user_groups[i]['name'],
-                'id': user_groups[i]['id'],
-                'members_count': user_groups[i]['members_count']
-            }
-            list_answers_for_d.append(d)
-        i += 1
+    while i < len(unique_groups):
+        params['group_id'] = unique_groups[i]
+        params['fields'] = 'members_count'
+        response = requests.get('https://api.vk.com/method/groups.getById', params)
+        try:
+            resp_js_gr = response.json()['response']
+            for g in resp_js_gr:
+                d = {'name': g['name'],
+                     'id': g['id'],
+                     'members_count': g['members_count']
+                     }
+                list_answers_for_d.append(d)
+            i += 1
+        except KeyError:
+            if response.json()['error']['error_code'] == 6:
+                print('Ошибка 6. Слишком много запросов в секунду.')
+                print(response.json())
+                time.sleep(2)
     return list_answers_for_d
 
 
@@ -93,3 +94,8 @@ with open('groups.json', 'w', encoding='utf-8') as fw:
 # pprint(get_friends())
 # pprint(friends_groups())
 # answer_for_d()
+
+# set_user_groups = set(get_groups())
+# print(set_user_groups)
+# pprint(get_friends())
+# print(answer_for_d())
